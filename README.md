@@ -13,7 +13,7 @@
 
 This project is a Branch and Bound Algorithm implementation project for solving the TSP Problem, assigned as a bonus task for the Algorithm and Strategies Course. Given a graph representation as adjacency matrix, using the reduced cost matrix approach. Made by Kenneth Ezekiel 13521089, Bandung Institute of Technology.
 
-The constraint in this implementation is that the adjacency matrix must contain all values (all nodes must be connected to every other node).
+The constraint in this implementation is that the adjacency matrix must contain all values (all nodes must be connected to every other node). This project is also made using Ruby.
 
 ## Running The Program
 
