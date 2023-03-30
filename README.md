@@ -5,6 +5,7 @@
 - [Branch and Bound TSP](#branch-and-bound-tsp)
   - [Table Of Contents](#table-of-contents)
   - [Project Description](#project-description)
+  - [Input File](#input-file)
   - [Running The Program](#running-the-program)
   - [Project Dependencies](#project-dependencies)
   - [References](#references)
@@ -14,6 +15,14 @@
 This project is a Branch and Bound Algorithm implementation project for solving the TSP Problem, assigned as a bonus task for the Algorithm and Strategies Course. Given a graph representation as adjacency matrix, using the reduced cost matrix approach. Made by Kenneth Ezekiel 13521089, Bandung Institute of Technology.
 
 The constraint in this implementation is that the adjacency matrix must contain all values (all nodes must be connected to every other node). This project is also made using Ruby.
+
+## Input File
+
+Input files can be placed in the `test` folder, with the following constraints:
+* Numbers must be separated by spaces
+* The matrix must be a square matrix
+* The diagonal of the matrix must be all `inf` signifying infinite
+* All rows are separated by new lines or `\n` (simply press enter)
 
 ## Running The Program
 
