@@ -4,8 +4,8 @@ class PriorityQueue
   end
 
   # Add an item to the queue with a priority
-  def push(priority, item)
-    @items.push([priority, item])
+  def push(priority, item, matrix)
+    @items.push([priority, item, matrix])
     # puts "Push Prio #{priority} node #{item}"
     @items.sort!
   end
@@ -14,7 +14,8 @@ class PriorityQueue
   def pop
 
     item = @items.shift
-    # puts "Pop item #{item}"
+    # puts "Pop item #{item[0]}, #{item[1]}"
+    # item[2].to_a.each { |row| puts row.inspect }
     return item
   end
 

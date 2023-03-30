@@ -8,11 +8,12 @@ class TSP
     @cost_matrix = cost_matrix
     @num_cities = cost_matrix.length
     @visited = Array.new(@num_cities, false)
+    @init_bound, @cost_matrix = reduce_matrix(@cost_matrix)
   end
 
   # Returns the reduced cost matrix
-  def reduce_matrix
-    reduced_matrix = @cost_matrix.map(&:clone)
+  def reduce_matrix(cost_matrix)
+    reduced_matrix = cost_matrix.map(&:clone)
     low_bound = 0
     # Substract the row in cost matrix with the smallest element
     reduced_matrix.each_with_index do |row, i|
@@ -23,45 +24,60 @@ class TSP
     # Subtract the col in cost matrix with the smallest element
     @num_cities.times do |j|
       # Get j-th column of cost matrix
-      min_cost = reduced_matrix.map { |row| row[j] }.min
+      min_cost = 99999
+      reduced_matrix.each_with_index do |row, i|
+        min_cost = row[j] if row[j] < min_cost
+      end
       low_bound += min_cost
       reduced_matrix.each_with_index do |row, i|
         row[j] -= min_cost
       end
     end
-    # @cost_matrix = reduced_matrix
-    puts "Reduced cost matrix"
-    reduced_matrix.to_a.each { |row| puts row.inspect }
-    return low_bound
+
+    cost_matrix = reduced_matrix
+    # puts "Reduced cost matrix"
+    # reduced_matrix.to_a.each { |row| puts row.inspect }
+    return low_bound, cost_matrix
   end
 
-  # Gets the lower bound of a tour
-  # A partial tour is a list of city numbers
-  def lower_bound(tour, current_cost = 0, tour_start = 0)
-    last_city = tour.last
-    unvisited_cities = (0...@num_cities).to_a - tour
-    while !unvisited_cities.empty?
-      # Find the minimum cost edge from the last city to an unvisited city
-      min_cost = Float::INFINITY
-      city = nil
-      unvisited_cities.each do |next_city|
-        if @cost_matrix[last_city][next_city] <= min_cost
-          min_cost = @cost_matrix[last_city][next_city]
-          city = next_city
-        end
-      end
-      # If there are no unvisited cities left, return the cost of going back to the starting city
-      if city.nil?
-        current_cost += @cost_matrix[last_city][tour.first]
-        break
-      end
-      # Add the cost of the minimum edge to the total cost and mark the city as visited
-      current_cost += min_cost
-      last_city = city
-      unvisited_cities.delete(city)
-    end
-    return current_cost
+  def print_matrix(matrix)
+    puts "Reduced cost matrix"
+    matrix.to_a.each { |row| puts row.inspect }
   end
+
+  def to_infinite(row, col, matrix)
+    matrix[row].map { |elmt| 99999 }
+    for a in 0..@num_cities-1 do
+      matrix[a][col] = 99999
+    end
+    matrix[col][row] = 99999
+    return matrix
+  end
+
+
+  # Will return lower_bound_cost and updated cost_matrix
+  def lower_bound(last_tour, current_tour, last_bound)
+    cost_matrix = @cost_matrix.map(&:clone)
+    next_city = current_tour.last
+    current_city = last_tour.last
+
+    # Get the cost from the current_city to the next_city
+    cost = cost_matrix[current_city][next_city]
+
+    # Set all the row from current_city to infinite
+    cost_matrix[current_city].map! { |cost| 99999 }
+    # Set all the col for the next_city to infinite
+
+    for a in 0..@num_cities-1 do
+      cost_matrix[a][next_city] = 99999
+    end
+    # Prevent going backwards
+    cost_matrix[next_city][current_city] = 99999
+    current_bound, cost_matrix = reduce_matrix(cost_matrix)
+    cost_matrix = to_infinite(current_city, next_city, cost_matrix)
+    return cost, cost_matrix
+  end
+
 
 
   # Branch-and-Bound Algorithm
@@ -71,20 +87,22 @@ class TSP
     # Start tour at city 0
     initial_tour = [0]
     @visited[0] = true
-    initial_bound = 0
+    initial_bound = @init_bound
     # initial_bound = lower_bound(initial_tour)
-    prio_queue.push(initial_bound, initial_tour)
+    prio_queue.push(initial_bound, initial_tour, @cost_matrix)
+    total_bound = initial_bound
 
     # Initialize best tour
     best_tour = nil
-    best_cost = Float::INFINITY
+    best_cost = 99999
+    best_cost_matrix = nil
 
     # Search for the optimal tour present
     while !prio_queue.empty?
       # Dequeue the node with the lowest cost (lower bound)
       current_node = prio_queue.pop
       # puts current_node.inspect
-      current_bound, current_tour = current_node
+      current_bound, current_tour, current_cost_matrix = current_node
 
       # If the lower bound of the node is greater than or equal to the best tour found so far, prune the node
       if current_bound >= best_cost
@@ -96,6 +114,7 @@ class TSP
         if current_bound < best_cost
           best_tour = current_tour
           best_cost = current_bound
+          best_cost_matrix = current_cost_matrix
         end
         next
       end
@@ -109,8 +128,8 @@ class TSP
         if !@visited[j]
           # Add the unvisited city to the new partial tour
           new_tour = current_tour + [j]
-          new_bound = lower_bound(new_tour)
-          prio_queue.push(new_bound, new_tour)
+          new_bound, new_cost_matrix = lower_bound(current_tour, new_tour, current_bound)
+          prio_queue.push(new_bound + current_bound, new_tour, new_cost_matrix)
         end
       end
       current_tour.each do |city|
@@ -118,30 +137,52 @@ class TSP
       end
     end
 
-    return best_tour, best_cost
+    return best_tour, best_cost, best_cost_matrix
   end
 end
 
-cost_matrix = [
-  [Float::INFINITY, 20, 30, 10, 11],
-  [15, Float::INFINITY, 16, 4, 2],
-  [3, 5, Float::INFINITY, 2, 4],
-  [19, 6, 18, Float::INFINITY, 3],
-  [16, 4, 7, 16, Float::INFINITY]
-]
+def print_matrix(matrix)
+  matrix.to_a.each { |row| puts row.inspect }
+end
 
 # cost_matrix = [
-#   [Float::INFINITY, 10, 15, 20],
-#   [10, Float::INFINITY, 35, 25],
-#   [15, 35, Float::INFINITY, 30],
-#   [20, 25, 30, Float::INFINITY]
+#   [99999, 20, 30, 10, 11],
+#   [15, 99999, 16, 4, 2],
+#   [3, 5, 99999, 2, 4],
+#   [19, 6, 18, 99999, 3],
+#   [16, 4, 7, 16, 99999]
 # ]
+
+# cost_matrix = [
+#   [99999, 10, 15, 20],
+#   [10, 99999, 35, 25],
+#   [15, 35, 99999, 30],
+#   [20, 25, 30, 99999]
+# ]
+
+puts "Please enter filename (without .txt extension) : "
+filename = gets.chomp
+
+file = File.open("../test/#{filename}.txt")
+
+puts "Adjacent matrix: "
+cost_matrix = File.read("../test/#{filename}.txt").split("\n")
+puts cost_matrix
+cost_matrix.map! { |row| row.split(" ") }
+cost_matrix = cost_matrix.map! { |row| row.map! { |elmt| elmt == "inf" ? 99999 : elmt.to_i } }
+
+file.close
+
 tsp = TSP.new(cost_matrix)
 
-# low_bound = tsp.reduce_matrix
 
-best_tour, best_cost = tsp.branch_and_bound
+best_tour, best_cost, best_cost_matrix = tsp.branch_and_bound
 
-best_cost += tsp.reduce_matrix
+# tsp.print_matrix(best_cost_matrix)
+# best_cost += tsp.reduce_matrix
+
+# for a in 0..cost_matrix.length-1 do
+#   best_cost += cost_matrix[a % cost_matrix.length][(a + 1) % cost_matrix.length]
+# end
 puts "Best tour: #{best_tour}"
 puts "Best cost: #{best_cost}"
